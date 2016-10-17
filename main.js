@@ -2,16 +2,17 @@ var data = require('./data.js');
 
 // ----- Weather data string(s) -----
 
-var newArr = data.list.map(function (value) {
-	return addEquals(value.name + ' ') + '\n' +
-	value.weather[0].description + '\n' +
-	'Temp: ' + toF(value.main.temp) + '\260' + 'F' + '\n' +
-	'Lo: ' + toF(value.main.temp_min) + '\260' + 'F' + ', ' + 'Hi: ' + toF(value.main.temp_max) + '\260' + 'F' + '\n' +
-	'Humidity: ' + value.main.humidity + '%' + '\n' +
-	'Wind: ' + value.wind.speed + ' MPH ' + degreeConversion(value.wind.deg) + '\n' +
-	addEquals('') + '\n';
-});
+function weatherInfo (obj) {
+	return addEquals(obj.name + ' ') + '\n' +
+		obj.weather[0].description + '\n' +
+		'Temp: ' + toF(obj.main.temp) + '\260' + 'F' + '\n' +
+		'Lo: ' + toF(obj.main.temp_min) + '\260' + 'F' + ', ' + 'Hi: ' + toF(obj.main.temp_max) + '\260' + 'F' + '\n' +
+		'Humidity: ' + obj.main.humidity + '%' + '\n' +
+		'Wind: ' + obj.wind.speed + ' MPH ' + degreeConversion(obj.wind.deg) + '\n' +
+		addEquals('') + '\n';
+}
 
+var newArr = data.list.map(weatherInfo);
 
 newArr.sort();
 
@@ -38,15 +39,15 @@ function toF (kelvin) {
 // ----- Temperature Average(s): -----
 
 var mainTemp = data.list.map(function (value) {
-	return toF(value.main.temp);
+	return value.main.temp;
 })
 
 var mainMinTemp = data.list.map(function (value) {
-	return toF(value.main.temp_min);
+	return value.main.temp_min;
 })
 
 var mainMaxTemp = data.list.map(function (value) {
-	return toF(value.main.temp_max);
+	return value.main.temp_max;
 })
 
 var mainHumidity = data.list.map(function (value) {
@@ -58,29 +59,17 @@ var windSpeed = data.list.map(function (value) {
 })
 
 var windDirection = data.list.map(function (value) {
-	return degreeConversion(value.wind.deg);
-})
-
-var windSpeedDirection = data.list.map(function (value) {
-	return value.wind;
+	return value.wind.deg;
 })
 
 
 function avg (array) {
 	var result = 0;
 	for (var i = 0; i < array.length; i++) {
-        result += parseInt(array[i]);
+        result += array[i];
     }
     return result / array.length;
 }
-
-console.log(avg(mainTemp) + '\260' + 'F');
-console.log(avg(mainMinTemp) + '\260' + 'F');
-console.log(avg(mainMaxTemp) + '\260' + 'F');
-console.log(avg(mainHumidity) + '%');
-console.log(avg(windSpeed) + ' MPH ' + avg(windDirection));
-
-
 
 // ----- Description with the most occurences: -----
 
@@ -91,8 +80,8 @@ var weatherDescription = data.list.map(function (value) {
 // creating a new object to help determine the description with the most occurences
 function mostOccurences(arr) {
 	// creating a new object to push in property name and assign it a value
-		var descOcc = {};
-		// using forEach to go through each of the items in the array where a = the current element in the array 
+	var descOcc = {};
+	// using forEach to go through each of the items in the array where a = the current element in the array 
     arr.forEach(function (a) {
     	// if the current elemet in the array is present in the object...
     	if (a in descOcc) {
@@ -110,15 +99,34 @@ function mostOccurences(arr) {
     		return a;
     	} else {
     		return b;
-    	} })
+    	}
+    });
     
     
     return highestOcc;;
 
 }
 
-console.log(mostOccurences(weatherDescription));
+var averages = {
+	name: 'Averages',
+	main: {
+		temp: avg(mainTemp),
+		temp_min: avg(mainMinTemp),
+		temp_max: avg(mainMaxTemp),
+		humidity: avg(mainHumidity)
+	},
+	wind: {
+		speed: avg(windSpeed),
+		deg: avg(windDirection)
+	},
+	weather: [
+		{
+			description: mostOccurences(weatherDescription)
+		}
+	]
+};
 
+console.log(weatherInfo(averages));
 
 // ----- Lowest/Highest Temp: -----
 
@@ -133,32 +141,29 @@ function getMinOfArray(numArray) {
 
 
 
-console.log(getMinOfArray(mainMinTemp) + '\260' + 'F', getMaxOfArray(mainMaxTemp) + '\260' + 'F');
+console.log(toF(getMinOfArray(mainMinTemp)) + '\260' + 'F', toF(getMaxOfArray(mainMaxTemp)) + '\260' + 'F');
 console.log(getMinOfArray(mainHumidity) + '%', getMaxOfArray(mainHumidity) + '%');
 
 
 
 // ----- Lowest/Highest Wind Speeds Including Direction: -----
 
-var result = windSpeedDirection[0];
+var maxWindLocation = data.list.reduce(function (prev, next) {
+	if (prev.wind.speed < next.wind.speed) {
+		return next;
+	}
+	return prev;
+});
 
-for(var i = 1; i < windSpeedDirection.length; i++) {
-	if(windSpeedDirection[i].speed < result.speed) {
-		result = windSpeedDirection[i];
-	} 
-	i++;
-};
+var minWindLocation = data.list.reduce(function (prev, next) {
+	if (prev.wind.speed > next.wind.speed) {
+		return next;
+	}
+	return prev;
+});
 
-console.log(result.speed + ' MPH ' + degreeConversion(result.deg));
-
-for(var i = 1; i < windSpeedDirection.length; i++) {
-	if(windSpeedDirection[i].speed > result.speed) {
-		result = windSpeedDirection[i];
-	} 
-	i++;
-};
-
-console.log(result.speed + ' MPH ' + degreeConversion(result.deg));
+console.log(maxWindLocation.wind.speed + ' MPH ' + degreeConversion(maxWindLocation.wind.deg));
+console.log(minWindLocation.wind.speed + ' MPH ' + degreeConversion(minWindLocation.wind.deg));
 
 
 // ----- Degree Conversion -----
@@ -184,8 +189,6 @@ function degreeConversion (value) {
 };
 
 
-// need to complete:
-// ----- Averages Object -----
 
 
 
